@@ -1,7 +1,41 @@
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
+import { promisify } from "node:util";
+
+const THEME_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const THEME_PACKAGE_PATTERNS = [
+  /^@slidev\/theme-[a-z0-9]+(?:-[a-z0-9]+)*$/,
+  /^slidev-theme-[a-z0-9]+(?:-[a-z0-9]+)*$/,
+  /^@[a-z0-9]+(?:-[a-z0-9]+)*\/slidev-theme-[a-z0-9]+(?:-[a-z0-9]+)*$/,
+];
+
+/** Maps a theme identifier to an npm package, rejecting anything that isn't a
+ * recognized Slidev theme naming convention (prevents installing an arbitrary
+ * package via a crafted `theme` value). */
+function resolveThemePackage(theme: string): string {
+  if (THEME_NAME.test(theme)) return `@slidev/theme-${theme}`;
+  if (THEME_PACKAGE_PATTERNS.some((re) => re.test(theme))) return theme;
+  throw new Error(
+    `Invalid theme "${theme}": expected a bare name (e.g. "seriph"), "@slidev/theme-*", ` +
+      `"slidev-theme-*", or "@scope/slidev-theme-*".`,
+  );
+}
+
+/** Resolves the currently published version of a package and pins it, instead
+ * of persisting an unpinned "latest" range in scaffolded package.json files. */
+async function resolveVersion(pkg: string): Promise<string> {
+  try {
+    const { stdout } = await promisify(execFile)("npm", ["view", pkg, "version"], {
+      shell: process.platform === "win32",
+    });
+    const version = stdout.trim();
+    return version ? `^${version}` : "latest";
+  } catch {
+    return "latest";
+  }
+}
 
 export interface PresentationInfo {
   name: string;
@@ -77,10 +111,13 @@ export async function createPresentation(
   const dir = join(root, opts.name);
   if (existsSync(dir)) throw new Error(`Folder already exists: ${dir}`);
 
-  await mkdir(dir, { recursive: true });
-
   const title = opts.title ?? opts.name;
   const theme = opts.theme ?? "default";
+  if (theme !== "default" && theme !== "none" && !THEME_NAME.test(theme)) {
+    throw new Error(`Invalid theme "${theme}": use a bare name, e.g. "seriph".`);
+  }
+
+  await mkdir(dir, { recursive: true });
 
   const slides = `---
 theme: ${theme}
@@ -103,6 +140,14 @@ Press <kbd>space</kbd> to start
 - Point 2
 `;
 
+  const themePkg =
+    theme !== "default" && theme !== "none" ? `@slidev/theme-${theme}` : "@slidev/theme-default";
+  const [cliVersion, themeVersion, vueVersion] = await Promise.all([
+    resolveVersion("@slidev/cli"),
+    resolveVersion(themePkg),
+    resolveVersion("vue"),
+  ]);
+
   const pkg = {
     name: `slides-${opts.name.toLowerCase()}`,
     private: true,
@@ -113,11 +158,9 @@ Press <kbd>space</kbd> to start
       export: "slidev export",
     },
     dependencies: {
-      "@slidev/cli": "latest",
-      ...(theme !== "default" && theme !== "none"
-        ? { [`@slidev/theme-${theme}`]: "latest" }
-        : { "@slidev/theme-default": "latest" }),
-      vue: "latest",
+      "@slidev/cli": cliVersion,
+      [themePkg]: themeVersion,
+      vue: vueVersion,
     },
   };
 
@@ -176,10 +219,7 @@ function runInstallPkg(cwd: string, pkg: string): Promise<void> {
 export async function ensureThemeInstalled(p: PresentationInfo): Promise<void> {
   const theme = p.theme ?? "default";
   if (theme === "none") return;
-  const pkg =
-    theme.startsWith("@") || theme.includes("/") || theme.startsWith("slidev-theme-")
-      ? theme
-      : `@slidev/theme-${theme}`;
+  const pkg = resolveThemePackage(theme);
   if (existsSync(join(p.path, "node_modules", ...pkg.split("/")))) return;
   await runInstallPkg(p.path, pkg);
 }
