@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "description": "MCP server to orchestrate multiple Slidev presentations: list, create, run dev servers, and proxy the official Slidev MCP tools per presentation.",
   "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/death-joke/slidev-orchestrator-mcp.git"
+  },
   "main": "dist/index.js",
   "scripts": {
     "test": "vitest run --coverage",
