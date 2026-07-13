@@ -5,7 +5,11 @@
   "keywords": [],
   "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "RUN_INTEGRATION=1 vitest run --config vitest.integration.config.ts",
     "build": "tsc && chmod +x dist/index.js",
     "prepublishOnly": "npm run build",
     "release": "commit-and-tag-version",
@@ -43,12 +47,14 @@
     "@commitlint/config-conventional": "^21.2.0",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
     "commit-and-tag-version": "^12.7.3",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "prettier": "^3.9.5",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.63.0"
+    "typescript-eslint": "^8.63.0",
+    "vitest": "^4.1.10"
   }
 }
