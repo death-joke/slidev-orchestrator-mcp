@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.3](https://github.com/death-joke/slidev-orchestrator-mcp/compare/v0.1.2...v0.1.3) (2026-07-13)
+
+### Bug Fixes
+
+- allowlist theme packages and pin scaffolded dependency versions ([#3](https://github.com/death-joke/slidev-orchestrator-mcp/issues/3)) ([b2de334](https://github.com/death-joke/slidev-orchestrator-mcp/commit/b2de3341606056114e68c6cf3433cb8a2b8d25bf))
+
 ## [0.1.2](https://github.com/death-joke/slidev-orchestrator-mcp/compare/v0.1.1...v0.1.2) (2026-07-13)
 
 ## 0.1.1 (2026-07-13)
